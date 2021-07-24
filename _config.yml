@@ -2,6 +2,7 @@
 
 # Permalinks
 permalink:        pretty
+remote_theme: poole/hyde
 #relative_permalinks: true
 
 # Setup
