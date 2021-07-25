@@ -2,7 +2,7 @@
 layout: post
 title: Downloading public comments with a simple-to-use Python wrapper for the Regulations.gov API
 description: How to download public comments from Regulations.gov using the v4 API and Python
-permalink: /downloading-public-comments
+permalink: blog/downloading-public-comments
 author: Will Jobs
 ---
 
