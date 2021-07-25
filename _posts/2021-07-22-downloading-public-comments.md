@@ -109,7 +109,7 @@ Similarly, to download all comments on one *document*, you would specify `--docu
 
     Done getting all 10 comments for document FDA-2009-N-0501-0012----------------
 
-One important note: this code does not download attachments (PDFs, Word docs, etc.). However, I added the column `attachmentLinks` to the output which contains a pipe-separated ("|") list of URL(s) for any attachments to a given comment. Given that [almost 30% of comments](https://github.com/willjobs/public-comments-project/tree/main/blogposts/post5#pipeline) on a given document are "attached" comments, where the text in the body of the comment is something akin to "see attached comment", this is a significant amount of information, so using the URLs in this column may be necessary for some projects.
+One important note: this code does not download attachments (PDFs, Word docs, etc.). However, I added the column `attachmentLinks` to the output which contains a pipe-separated (\|) list of URL(s) for any attachments to a given comment. Given that [almost 30% of comments](https://github.com/willjobs/public-comments-project/tree/main/blogposts/post5#pipeline) on a given document are "attached" comments, where the text in the body of the comment is something akin to "see attached comment", this is a significant amount of information, so using the URLs in this column may be necessary for some projects.
 
 It is worth noting that both of the above examples return a small number of comments. If the docket or document you query has over 1,000 comments, you will hit your API key's rate limit and will have to wait up to an hour for your rate limit to reset. The code will automatically handle this for you, waiting and checking back in every 20 minutes to see if you have been given another 1,000 requests. It is possible to [contact the Helpdesk](https://www.regulations.gov/support) to get up to 2,000 requests per hour, and up to two keys per user.
 
@@ -121,57 +121,57 @@ The Jupyter notebook [Examples.ipynb](https://github.com/willjobs/regulations-pu
 
 The first step in using the code is to import it and create a new instance of the `CommentsDownloader` class (replace `DEMO_KEY` with the API key you got at [https://open.gsa.gov/api/regulationsgov/#getting-started](https://open.gsa.gov/api/regulationsgov/#getting-started): 
 
-    {% highlight python %}
-    from comments_downloader import CommentsDownloader
-    downloader = CommentsDownloader(api_key="DEMO_KEY")
-    {% endhighlight %}
+{% highlight python %}
+from comments_downloader import CommentsDownloader
+downloader = CommentsDownloader(api_key="DEMO_KEY")
+{% endhighlight %}
 
 ### Example 1:
 In the first example, we can download our comments into both a SQLite database *and* a CSV, specifying our own filenames for each (alternatively, you could also export to only SQLite or CSV):
 
-    {% highlight python %}
-    downloader.gather_comments_by_docket("FDA-2021-N-0270", db_filename="my_database.db", csv_filename="my_csv.csv")
-    {% endhighlight %}
+{% highlight python %}
+downloader.gather_comments_by_docket("FDA-2021-N-0270", db_filename="my_database.db", csv_filename="my_csv.csv")
+{% endhighlight %}
 
 The results are the same as you would get at the command-line. There are several benefits to using a SQLite database over a CSV: you can run SQL on it (including joins, etc.), you can add constraints, and there are guaranteed to be no issues with characters in the comment strings that may affect CSV imports. (The code does its best to avoid this issue with CSVs: quote characters are double-quoted and line breaks are replaced with a space so that every row in the CSV is one "record"). One other big benefit is you can store the data from dockets, documents, and comments all in one place. For example, when downloading all comments on a given docket, header information about the documents will be stored in the `documents_header` table, the comment headers will be in the `comments_header` table, and the details about each comment (including the text of the comment) will be in the `comments_detail` table. This is in contrast to the command-line output, which will only output the equivalent of the `comments_detail` table to a CSV. The full database schema is [here](https://github.com/willjobs/regulations-public-comments#database-schema).
 
 ### Example 2
 To download all of the comments associated with multiple dockets (or documents) the following scaffolding works well (note that if we had specified a CSV filename instead/in addition, all of the dockets' comments would be contained in a single CSV file):
 
-    {% highlight python %}
-    my_dockets = ["FDA-2009-N-0501", "EERE-2019-BT-STD-0036", "NHTSA-2019-0121"]
+{% highlight python %}
+my_dockets = ["FDA-2009-N-0501", "EERE-2019-BT-STD-0036", "NHTSA-2019-0121"]
 
-    for docket_id in my_dockets:
-        print(f"\n********************************\nSTARTING {docket_id}\n********************************")
-        downloader.gather_comments_by_docket(docket_id, db_filename="my_database2.db")
+for docket_id in my_dockets:
+    print(f"\n********************************\nSTARTING {docket_id}\n********************************")
+    downloader.gather_comments_by_docket(docket_id, db_filename="my_database2.db")
 
-    print("\nDONE")
-    {% endhighlight %}
+print("\nDONE")
+{% endhighlight %}
 
 ### An aside
 It's worth noting how much stuff is abstracted away in the three non-`print` lines of code above. Ordinarily there is no way to go directly from `docketId`s to comments because the available filters in the API only allow filtering comments by document. So, first you would use your `docketId`s to query for each docket's documents, using the `documents` endpoint (instead of `dockets` in the above use of `gather_headers`):
 
-    {% highlight python %}
-    for docket_id in docket_ids:
-        params = {"filter[docketId]": docket_id}
-        downloader.gather_headers("documents", params, csv_filename="EPA_water_documents.csv")
-    {% endhighlight %}
+{% highlight python %}
+for docket_id in docket_ids:
+    params = {"filter[docketId]": docket_id}
+    downloader.gather_headers("documents", params, csv_filename="EPA_water_documents.csv")
+{% endhighlight %}
 
 Then you would use the document headers downloaded into `EPA_water_documents.csv` to query for their associated comments, but you would first need to get each document's `objectId` from that file. This is because the API filters comments by a document's `objectId`, not its `documentId` (my guess is because of a data issue in the backend where there are actually multiple documents with the same `documentId`; I've seen weird behavior for some rare `documentId`s). You would then use these `objectId`s to get comments, similar to above:
 
-    {% highlight python %}
-    for object_id in object_ids: # taken from EPA_water_documents.csv
-        params = {"filter[commentOnId]": object_id}
-        downloader.gather_headers("comments", params, csv_filename="EPA_water_comments_header.csv")
-    {% endhighlight %}
+{% highlight python %}
+for object_id in object_ids: # taken from EPA_water_documents.csv
+    params = {"filter[commentOnId]": object_id}
+    downloader.gather_headers("comments", params, csv_filename="EPA_water_comments_header.csv")
+{% endhighlight %}
 
 Finally, with these comment headers in hand, you could use each `commentId` in `EPA_water_comments_header.csv` to gather the full data for each comment by accessing the "Details" endpoint:
 
-    {% highlight python %}
-    # download the comments
-    comment_ids = downloader.get_ids_from_csv("EPA_water_comments_header.csv", data_type="comments")
-    downloader.gather_details("comments", comment_ids, csv_filename="EPA_water_comments.csv")
-    {% endhighlight %}
+{% highlight python %}
+# download the comments
+comment_ids = downloader.get_ids_from_csv("EPA_water_comments_header.csv", data_type="comments")
+downloader.gather_details("comments", comment_ids, csv_filename="EPA_water_comments.csv")
+{% endhighlight %}
 
 Note that if you had used SQLite, rather than four separate CSV files floating around, you'd have a single database with all these data stored in the same place.
 
@@ -179,27 +179,27 @@ Note that if you had used SQLite, rather than four separate CSV files floating a
 
 Finally, a (slightly) more complex example with a custom query: let's say we want to download all of the comments associated with EPA dockets containing the term "water" and which were posted between 1/1/2017 and 12/31/2020. Our first step is to get the docket headers with a `searchTerm` of "water" and a `lastModifiedDate` between 1/1/2017 and 12/31/2020: 
 
-    {% highlight python %}
-    # get the comment headers for these criteria
-    params = {"filter[lastModifiedDate][ge]": "2017-01-01 00:00:00",  # API for dockets doesn't have postedDate filter 
-              "filter[lastModifiedDate][le]": "2020-12-31 23:59:59",  # also, these times are in Eastern time zone
-              "filter[agencyId]": "EPA",
-              "filter[searchTerm]": "water"}
+{% highlight python %}
+# get the comment headers for these criteria
+params = {"filter[lastModifiedDate][ge]": "2017-01-01 00:00:00",  # API for dockets doesn't have postedDate filter 
+            "filter[lastModifiedDate][le]": "2020-12-31 23:59:59",  # also, these times are in Eastern time zone
+            "filter[agencyId]": "EPA",
+            "filter[searchTerm]": "water"}
 
-    # this will download the headers 250 dockets at a time, and save the headers into a CSV
-    # (you could also save them into a SQLite database)
-    downloader.gather_headers("dockets", params, csv_filename="EPA_water_dockets.csv")
-    {% endhighlight %}
+# this will download the headers 250 dockets at a time, and save the headers into a CSV
+# (you could also save them into a SQLite database)
+downloader.gather_headers("dockets", params, csv_filename="EPA_water_dockets.csv")
+{% endhighlight %}
 
 The above results download 353 records (dockets) into the file [EPA_water_dockets.csv]({{site.baseurl}}/assets/EPA_water_dockets.csv). Now all you have to do is:
 
-    {% highlight python %}
-    docket_ids = downloader.get_ids_from_csv("EPA_water_dockets.csv", data_type="dockets")
+{% highlight python %}
+docket_ids = downloader.get_ids_from_csv("EPA_water_dockets.csv", data_type="dockets")
 
-    for docket_id in my_dockets:
-        print(f"\n********************************\nSTARTING {docket_id}\n********************************")
-        downloader.gather_comments_by_docket(docket_id, csv_filename="EPA_water_comments.csv")
-    {% endhighlight %}
+for docket_id in my_dockets:
+    print(f"\n********************************\nSTARTING {docket_id}\n********************************")
+    downloader.gather_comments_by_docket(docket_id, csv_filename="EPA_water_comments.csv")
+{% endhighlight %}
 
 # Additional Reading
 For more information on Regulations.gov and its API, you can visit the [official documentation](https://open.gsa.gov/api/regulationsgov/), or check out the [blog posts](https://github.com/willjobs/public-comments-project/tree/main/blogposts) that I wrote for a project during my master's. In particular, [post 1](https://github.com/willjobs/public-comments-project/tree/main/blogposts/post1) has a section on [the web interface](https://github.com/willjobs/public-comments-project/tree/main/blogposts/post1#web) and examples of comments, and [post 2](https://github.com/willjobs/public-comments-project/tree/main/blogposts/post2) goes into much greater detail than this post about the API and some observations. In addition, you can check out [the documentation](https://htmlpreview.github.io/?https://github.com/willjobs/regulations-public-comments/blob/master/documentation.html) for this code.
