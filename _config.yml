@@ -1,7 +1,7 @@
 # Dependencies
 
 # Permalinks
-permalink:        pretty
+permalink:        /:title
 remote_theme: poole/hyde
 #relative_permalinks: true
 
